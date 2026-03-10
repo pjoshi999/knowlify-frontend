@@ -1,0 +1,428 @@
+# Implementation Plan: AI-Powered Course Creation System
+
+## Overview
+
+This implementation plan breaks down the AI-powered course creation system into actionable coding tasks following the 6-phase approach: Database Schema, Backend API, Frontend UI, Integration & Testing, and Migration & Deployment. The system transforms course creation from form-based uploads to an intelligent conversational interface with AI-powered content analysis, structured module organization, and real-time progress updates.
+
+## Tasks
+
+- [x] 1. Database Schema Setup
+  - [x] 1.1 Create modules table migration
+    - Create migration file with modules table (id, courseId, title, description, order, timestamps)
+    - Add primary key, foreign key to courses with CASCADE delete
+    - Add composite index on (courseId, order)
+    - _Requirements: 5.2, 5.6, 20.3_
+  - [x] 1.2 Create lessons table migration
+    - Create migration file with lessons table (id, moduleId, title, description, type, order, assetId, duration, timestamps)
+    - Add primary key, foreign keys to modules and course_assets with CASCADE delete
+    - Add composite index on (moduleId, order)
+    - _Requirements: 5.3, 5.7, 20.4, 20.5_
+  - [x] 1.3 Create lesson_ai_analysis table migration
+    - Create migration file with lesson_ai_analysis table (id, lessonId, summary, topics, learningObjectives, keyPoints, difficulty, transcription, analyzedAt, timestamps)
+    - Add primary key, unique index on lessonId, foreign key with CASCADE delete
+    - Add GIN indexes on topics and learningObjectives JSONB arrays
+    - _Requirements: 6.5, 9.1-9.5_
+  - [x] 1.4 Create upload_sessions table migration
+    - Create migration file with upload_sessions table (id, instructorId, status, fileCount, totalSize, folderStructure, tempStoragePaths, suggestedStructure, timestamps, expiresAt)
+    - Add primary key, indexes on (instructorId, createdAt) and expiresAt
+    - Use JSONB for folderStructure, tempStoragePaths, suggestedStructure
+    - _Requirements: 1.3, 2.6, 14.1_
+  - [x] 1.5 Update course_assets table migration
+    - Create migration to add storagePath column to course_assets table
+    - Add index on storagePath for lookups
+    - Backfill existing records with current path format
+    - _Requirements: 5.5, 13.6_
+
+- [x] 2. Backend Core Services
+  - [x] 2.1 Implement FolderUploadService
+    - Create service class with uploadFolder, processFiles, moveToStructuredStorage methods
+    - Implement multipart form data parsing with folder structure preservation
+    - Generate unique session IDs and store in upload_sessions table
+    - Implement file validation (type whitelist, size limits)
+    - Upload files to S3 temp storage: temp-uploads/{instructorId}/{sessionId}/{uuid}.{ext}
+    - _Requirements: 1.1, 1.4, 1.5, 1.6, 12.1-12.4_
+  - [x] 2.2 Implement chunked upload with resume capability
+    - Add chunked upload support (100MB chunks) to FolderUploadService
+    - Store upload progress in session metadata
+    - Implement resume from last successful chunk on failure
+    - Support up to 3 concurrent file uploads
+    - _Requirements: 1.7, 18.1, 19.1, 19.2_
+  - [x] 2.3 Implement AIContentAnalyzer service
+    - Create service class with analyzeStructure, analyzeVideoContent, analyzePDFContent methods
+    - Implement OpenAI API client configuration with error handling
+    - Add retry logic with exponential backoff for rate limits
+    - Implement result caching to avoid re-analysis
+    - _Requirements: 2.1-2.7, 18.2_
+  - [x] 2.4 Implement folder structure analysis algorithm
+    - Build folder hierarchy from file metadata
+    - Detect module patterns (module, week, section, chapter, lesson with numbers)
+    - Call GPT-4 to refine structure into 3-8 logical modules
+    - Generate suggested course name, description, and category
+    - Ensure all files assigned to exactly one module
+    - _Requirements: 2.1-2.7_
+  - [x] 2.5 Implement video content analysis algorithm
+    - Extract video metadata (duration, thumbnails)
+    - Call Whisper API for transcription if audio present
+    - Call GPT-4 with transcription to generate summary, topics, learning objectives, key points, difficulty
+    - Return structured analysis with all required fields
+    - _Requirements: 6.2, 6.3, 9.1-9.5_
+  - [x] 2.6 Implement ModuleRepository
+    - Create repository class with CRUD methods for modules
+    - Implement createModule, updateModule, deleteModule, reorderModules
+    - Implement getModulesByCourse with eager loading of lessons
+    - Add validation for unique order values per course
+    - Implement cascade delete for module deletion
+    - _Requirements: 5.2, 5.6, 7.1-7.7_
+  - [x] 2.7 Implement LessonRepository
+    - Create repository class with CRUD methods for lessons
+    - Implement createLesson, updateLesson, deleteLesson, reorderLessons
+    - Implement getLessonsByModule with asset and analysis data
+    - Add validation for unique order values per module
+    - Handle asset deletion on lesson deletion
+    - _Requirements: 5.3, 5.7, 8.1-8.7_
+
+- [x] 3. Background Job Processing
+  - [x] 3.1 Set up Bull queue for analysis jobs
+    - Install and configure Bull with Redis connection
+    - Create analysis job queue with retry configuration (max 3 retries, exponential backoff)
+    - Define AnalysisJob interface with all required fields
+    - Implement job status tracking in database
+    - _Requirements: 6.1, 6.6, 18.2_
+  - [x] 3.2 Implement BackgroundJobProcessor
+    - Create processor class with enqueueAnalysis, processJob, getJobStatus, cancelJob methods
+    - Implement job processing logic for video and PDF analysis
+    - Store analysis results in lesson_ai_analysis table
+    - Handle job failures with retry logic
+    - Limit concurrent processing to 5 jobs
+    - _Requirements: 6.1-6.7, 19.5_
+  - [x] 3.3 Implement WebSocket notification system
+    - Set up Socket.IO server for real-time updates
+    - Create notification service for analysis progress
+    - Send job status updates (processing, completed, failed)
+    - Implement connection management and reconnection logic
+    - Send course-level progress (completed vs total jobs)
+    - _Requirements: 15.1-15.7_
+
+- [ ] 4. API Endpoints - Upload Flow
+  - [x] 4.1 Implement POST /api/courses/folder-upload endpoint
+    - Accept multipart form data with files and folderStructure
+    - Validate authentication and instructor role
+    - Call FolderUploadService to process upload
+    - Return session ID, file count, total size, temp storage paths
+    - Apply rate limiting (100 requests per minute)
+    - _Requirements: 1.1-1.7, 12.6_
+  - [x] 4.2 Implement POST /api/courses/analyze-structure endpoint
+    - Accept sessionId in request body
+    - Validate session exists and is not expired
+    - Call AIContentAnalyzer to analyze folder structure
+    - Update session with suggested structure
+    - Return suggested modules, lessons, and metadata
+    - _Requirements: 2.1-2.7_
+  - [x] 4.3 Implement POST /api/courses/create-with-structure endpoint
+    - Accept sessionId, course data, and structure in request body
+    - Validate course name uniqueness for instructor
+    - Implement transaction for course, modules, lessons, assets creation
+    - Move files from temp to structured S3 paths
+    - Enqueue AI analysis jobs for each lesson
+    - Delete temporary files and mark session complete
+    - _Requirements: 5.1-5.8, 18.5, 20.7_
+  - [x] 4.4 Implement structured S3 path generation
+    - Create utility function generateStructuredPath
+    - Generate paths: courses/{courseId}/modules/{moduleId}/{type}/{lessonId}.{ext}
+    - Map asset types to path segments (videos, documents, images)
+    - Ensure path uniqueness across all assets
+    - _Requirements: 5.5, 13.1-13.7_
+
+- [-] 5. API Endpoints - Module Management
+  - [x] 5.1 Implement GET /api/courses/:courseId/modules endpoint
+    - Fetch all modules for course with lessons
+    - Include asset URLs and AI analysis data
+    - Order modules and lessons by order field
+    - Return nested structure with all metadata
+    - _Requirements: 10.1-10.7_
+  - [x] 5.2 Implement POST /api/courses/:courseId/modules endpoint
+    - Accept module data (title, description, order)
+    - Validate instructor owns course
+    - Create module with ModuleRepository
+    - Return created module with ID
+    - _Requirements: 7.1, 16.1_
+  - [x] 5.3 Implement PATCH /api/modules/:moduleId endpoint
+    - Accept partial module updates (title, description, order)
+    - Validate instructor owns parent course
+    - Update module with ModuleRepository
+    - Return updated module
+    - _Requirements: 7.2, 16.1_
+  - [x] 5.4 Implement DELETE /api/modules/:moduleId endpoint
+    - Validate instructor owns parent course
+    - Delete module with cascade to lessons
+    - Delete associated S3 files
+    - Return success response
+    - _Requirements: 7.4, 7.5, 16.1, 20.1, 20.2_
+  - [x] 5.5 Implement POST /api/courses/:courseId/modules/reorder endpoint
+    - Accept array of {id, order} pairs
+    - Validate instructor owns course
+    - Update all module orders in transaction
+    - Ensure sequential ordering (1, 2, 3, ...)
+    - Return updated modules
+    - _Requirements: 7.3, 7.6_
+
+- [ ] 6. API Endpoints - Lesson Management
+  - [x] 6.1 Implement POST /api/modules/:moduleId/lessons endpoint
+    - Accept lesson data (title, description, type, order, assetId, duration)
+    - Validate instructor owns parent course
+    - Create lesson with LessonRepository
+    - Return created lesson with ID
+    - _Requirements: 8.1, 16.1_
+  - [x] 6.2 Implement PATCH /api/lessons/:lessonId endpoint
+    - Accept partial lesson updates
+    - Validate instructor owns parent course
+    - Update lesson with LessonRepository
+    - Return updated lesson
+    - _Requirements: 8.2, 16.1_
+  - [x] 6.3 Implement DELETE /api/lessons/:lessonId endpoint
+    - Validate instructor owns parent course
+    - Delete lesson and associated asset
+    - Delete S3 file
+    - Return success response
+    - _Requirements: 8.5, 8.6, 16.1_
+  - [x] 6.4 Implement POST /api/modules/:moduleId/lessons/reorder endpoint
+    - Accept array of {id, order} pairs
+    - Validate instructor owns parent course
+    - Update all lesson orders in transaction
+    - Ensure sequential ordering within module
+    - Return updated lessons
+    - _Requirements: 8.3, 8.7_
+  - [x] 6.5 Implement GET /api/lessons/:lessonId/analysis endpoint
+    - Fetch AI analysis for lesson
+    - Return summary, topics, learning objectives, key points, difficulty, transcription
+    - Handle pending/failed analysis states
+    - _Requirements: 9.1-9.7_
+  - [x] 6.6 Implement POST /api/lessons/:lessonId/reanalyze endpoint
+    - Validate instructor owns parent course
+    - Enqueue new analysis job for lesson
+    - Return job ID and queued status
+    - _Requirements: 6.1, 9.7_
+
+- [-] 7. Frontend - Conversational Upload UI
+  - [x] 7.1 Create ConversationalUploadUI component
+    - Build ChatGPT-style message interface with message history
+    - Implement message types (user, assistant, system) with distinct styling
+    - Add Framer Motion entrance animations for messages
+    - Manage upload flow state (welcome, upload, analyzing, editing, publishing)
+    - Handle onCourseCreated callback
+    - _Requirements: 3.1-3.7_
+  - [x] 7.2 Create FolderUploadZone component
+    - Implement drag-and-drop zone with react-dropzone
+    - Accept folder uploads with nested structure preservation
+    - Show visual feedback during drag operations
+    - Display file tree preview before upload
+    - Validate file types and sizes client-side
+    - _Requirements: 1.1, 1.4, 1.5_
+  - [x] 7.3 Implement upload progress display
+    - Show real-time progress bar with percentage
+    - Display file count and uploaded/total size
+    - Animate progress bar with Framer Motion
+    - Show individual file upload status
+    - Handle upload errors with retry button
+    - _Requirements: 1.2, 3.5, 18.1_
+  - [x] 7.4 Implement AI analysis loading state
+    - Show animated loading indicator during analysis
+    - Display "Analyzing your course structure..." message
+    - Show estimated time remaining
+    - Handle analysis errors gracefully
+    - _Requirements: 2.1-2.7, 3.6_
+
+- [ ] 8. Frontend - Module Editor
+  - [x] 8.1 Create ModuleEditor component
+    - Build expandable tree view for modules and lessons
+    - Display module titles, descriptions, and lesson counts
+    - Show lesson type icons (video, PDF, image) and metadata
+    - Implement expand/collapse for modules
+    - Support editable and read-only modes
+    - _Requirements: 4.1, 4.6, 10.1-10.5_
+  - [x] 8.2 Implement drag-and-drop reordering with dnd-kit
+    - Set up dnd-kit context and sensors
+    - Enable drag-and-drop for modules within course
+    - Enable drag-and-drop for lessons within module
+    - Show visual feedback during drag (scale, shadow)
+    - Update order values on drop
+    - _Requirements: 4.2, 4.3_
+  - [x] 8.3 Implement inline editing
+    - Enable inline editing of module titles on click
+    - Enable inline editing of lesson titles on click
+    - Support editing descriptions with textarea
+    - Auto-save changes on blur
+    - Show save indicators
+    - _Requirements: 4.4, 4.5_
+  - [x] 8.4 Implement deletion with confirmation
+    - Add delete buttons for modules and lessons
+    - Show confirmation modal before deletion
+    - Support bulk selection and deletion
+    - Update UI optimistically
+    - _Requirements: 4.7, 4.8_
+
+- [ ] 9. Frontend - AI Analysis Display
+  - [x] 9.1 Create AIAnalysisDisplay component
+    - Display AI-generated summary prominently
+    - Show topics as tags or chips
+    - Display learning objectives as bulleted list
+    - Show key points in readable format
+    - Display difficulty level with visual indicator
+    - _Requirements: 9.1-9.5_
+  - [x] 9.2 Implement analysis status indicators
+    - Show "Analysis in progress" with spinner for pending
+    - Show "Analysis complete" with checkmark
+    - Show "Analysis failed" with error message and retry button
+    - Handle missing analysis gracefully
+    - _Requirements: 9.6, 9.7_
+
+- [ ] 10. Frontend - Enhanced Course Pages
+  - [ ] 10.1 Update course detail page with module display
+    - Fetch and display all modules with lessons
+    - Show module titles, descriptions, and lesson counts
+    - Implement expand/collapse for module details
+    - Display total course duration and lesson count
+    - Show AI-generated lesson summaries in preview
+    - _Requirements: 10.1-10.7_
+  - [ ] 10.2 Update course learn page with module navigation
+    - Create sidebar with module/lesson tree
+    - Highlight currently active lesson
+    - Implement lesson click navigation
+    - Show current module title above content
+    - Add Previous/Next buttons with cross-module navigation
+    - Track and display lesson completion status
+    - Calculate and show progress percentage
+    - _Requirements: 11.1-11.7_
+
+- [ ] 11. Frontend - Responsive Design
+  - [ ] 11.1 Implement responsive layouts
+    - Mobile (0-767px): Single-column layout, stacked modules
+    - Tablet (768-1023px): Two-column module grid
+    - Desktop (1024-1439px): Three-column grid with sidebar
+    - Wide (1440px+): Four-column grid with expanded workspace
+    - _Requirements: 17.1-17.4_
+  - [ ] 11.2 Optimize for touch devices
+    - Implement touch-friendly drag-and-drop
+    - Increase touch target sizes for mobile
+    - Add swipe gestures for navigation
+    - Optimize animations for 60 FPS on mobile
+    - _Requirements: 17.5-17.7_
+
+- [ ] 12. Integration - API Client
+  - [x] 12.1 Create API client with React Query
+    - Set up @tanstack/react-query with QueryClient
+    - Create mutation hooks for folder upload
+    - Create mutation hooks for structure analysis
+    - Create mutation hooks for course creation
+    - Implement optimistic updates for CRUD operations
+    - _Requirements: 1.1-5.8_
+  - [ ] 12.2 Implement WebSocket client
+    - Set up socket.io-client connection
+    - Subscribe to analysis progress events
+    - Handle connection/disconnection
+    - Update UI with real-time progress
+    - Implement reconnection logic
+    - _Requirements: 15.1-15.7_
+  - [ ] 12.3 Implement error handling and recovery
+    - Show user-friendly error messages
+    - Implement retry logic for failed requests
+    - Handle network interruptions gracefully
+    - Provide fallback UI for missing data
+    - Log errors for debugging
+    - _Requirements: 18.1-18.7_
+
+- [ ] 13. Security Implementation
+  - [ ] 13.1 Implement file upload validation
+    - Validate MIME types against whitelist
+    - Enforce file size limits (5GB per file, 10GB total)
+    - Implement rate limiting on upload endpoints
+    - Add CSRF protection
+    - _Requirements: 12.1-12.6_
+  - [ ] 13.2 Implement authorization middleware
+    - Create middleware to verify instructor owns course
+    - Apply to all module/lesson modification endpoints
+    - Return 403 Forbidden for unauthorized access
+    - Log authorization failures
+    - _Requirements: 16.1-16.7_
+  - [ ] 13.3 Implement S3 signed URLs
+    - Generate signed URLs with 1-hour expiration
+    - Apply to all asset access
+    - Implement URL refresh logic
+    - _Requirements: 12.5_
+
+- [ ] 14. Upload Session Management
+  - [ ] 14.1 Implement session cleanup job
+    - Create scheduled job to run every hour
+    - Query for sessions where expiresAt < now
+    - Delete temporary S3 files for expired sessions
+    - Delete expired session records
+    - Log cleanup statistics
+    - _Requirements: 14.1-14.7_
+  - [ ] 14.2 Implement session status tracking
+    - Update session status through workflow (uploading, analyzing, complete, failed)
+    - Prevent operations on expired sessions
+    - Allow instructors to view active sessions
+    - _Requirements: 14.3-14.6_
+
+- [ ] 15. Migration for Existing Courses
+  - [ ] 15.1 Create migration script for existing courses
+    - Query all courses without modules
+    - Create default "Course Content" module for each
+    - Create lessons from existing assets
+    - Move S3 files to structured paths
+    - Update asset storagePath values
+    - Delete old S3 files after successful migration
+    - _Requirements: 5.5, 13.1-13.7_
+  - [ ] 15.2 Create migration rollback script
+    - Implement reverse migration to restore old structure
+    - Test rollback on staging environment
+    - Document rollback procedure
+    - _Requirements: 20.1-20.7_
+
+- [ ] 16. Performance Optimization
+  - [ ] 16.1 Implement database query optimization
+    - Add composite indexes on (courseId, order) and (moduleId, order)
+    - Implement eager loading for nested module/lesson queries
+    - Add query result caching with 5-minute TTL
+    - Use batch inserts for bulk operations
+    - _Requirements: 5.2, 5.3, 19.5_
+  - [ ] 16.2 Implement frontend performance optimizations
+    - Add virtual scrolling for long lesson lists
+    - Implement lazy loading of module content
+    - Add code splitting for upload components
+    - Optimize bundle size (target < 500KB gzipped)
+    - Ensure 60 FPS animations
+    - _Requirements: 17.7, 19.5_
+
+- [ ] 17. Checkpoint - Integration Testing
+  - Ensure all tests pass, verify end-to-end workflows, ask the user if questions arise.
+
+- [ ] 18. Deployment Preparation
+  - [ ] 18.1 Set up environment configuration
+    - Configure OpenAI API keys
+    - Configure AWS S3 credentials and bucket
+    - Configure Redis connection for job queue
+    - Set up WebSocket server configuration
+    - Configure rate limiting parameters
+    - _Requirements: 6.1-6.7, 12.6, 15.1-15.7_
+  - [ ] 18.2 Create deployment documentation
+    - Document environment variables
+    - Document database migration steps
+    - Document S3 bucket setup
+    - Document monitoring and logging setup
+    - Create troubleshooting guide
+    - _Requirements: All_
+
+- [ ] 19. Final Checkpoint
+  - Ensure all tests pass, verify production readiness, ask the user if questions arise.
+
+## Notes
+
+- All tasks reference specific requirements for traceability
+- Implementation uses TypeScript throughout (frontend and backend)
+- Checkpoints ensure incremental validation at key milestones
+- Each task builds on previous tasks for logical progression
+- Focus on core implementation - testing tasks excluded per user instructions
+- Database migrations must be run before API implementation
+- Frontend components depend on API endpoints being complete
+- Migration of existing courses should be done after full system is deployed and tested

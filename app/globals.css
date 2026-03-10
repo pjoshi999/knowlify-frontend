@@ -1,26 +1,543 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* Light Theme - Soft grays, no pure white */
+:root,
+:root.light {
+  /* Background colors - Soft grays (zinc-50, zinc-100) */
+  --background: #fafafa; /* zinc-50 */
+  --background-secondary: #f4f4f5; /* zinc-100 */
+  --background-tertiary: #e4e4e7; /* zinc-200 */
+
+  /* Foreground colors - Dark grays */
+  --foreground: #09090b; /* zinc-950 */
+  --foreground-secondary: #3f3f46; /* zinc-700 */
+  --foreground-tertiary: #52525b; /* zinc-600 */
+
+  /* Primary - Dark gray */
+  --primary: #18181b; /* zinc-900 */
+  --primary-hover: #09090b; /* zinc-950 */
+  --primary-foreground: #fafafa;
+
+  /* Secondary - Medium gray */
+  --secondary: #f4f4f5; /* zinc-100 */
+  --secondary-hover: #e4e4e7; /* zinc-200 */
+  --secondary-foreground: #18181b;
+
+  /* Accent - Zinc accent */
+  --accent: #27272a; /* zinc-800 */
+  --accent-hover: #18181b; /* zinc-900 */
+  --accent-foreground: #fafafa;
+
+  /* Border colors - Subtle borders */
+  --border: #e4e4e7; /* zinc-200 */
+  --border-secondary: #d4d4d8; /* zinc-300 */
+
+  /* Card colors - Light cards with subtle background */
+  --card: #ffffff;
+  --card-hover: #fafafa;
+
+  /* Muted colors */
+  --muted: #f4f4f5;
+  --muted-foreground: #71717a;
+
+  /* Success - Muted gray */
+  --success: #27272a;
+  --success-foreground: #fafafa;
+
+  /* Error - Muted gray */
+  --error: #18181b;
+  --error-foreground: #fafafa;
+
+  /* Warning - Muted gray */
+  --warning: #27272a;
+  --warning-foreground: #fafafa;
+
+  /* Info - Muted gray */
+  --info: #27272a;
+  --info-foreground: #fafafa;
+
+  /* Input colors */
+  --input: #ffffff;
+  --input-border: #d4d4d8;
+  --input-focus: #a1a1aa;
+
+  /* Shadow */
+  --shadow: rgba(0, 0, 0, 0.08);
+  --shadow-lg: rgba(0, 0, 0, 0.12);
+}
+
+/* Dark Theme - Modern Design System */
+:root.dark {
+  /* Background colors - Black and Zinc */
+  --background: #000000; /* Black */
+  --background-secondary: #18181b; /* Zinc-900 */
+  --background-tertiary: #27272a; /* Zinc-800 */
+
+  /* Foreground colors - White and light grays */
+  --foreground: #ffffff; /* White */
+  --foreground-secondary: #a1a1aa; /* Zinc-400 */
+  --foreground-tertiary: #71717a; /* Zinc-500 */
+
+  /* Primary - White button style */
+  --primary: #ffffff;
+  --primary-hover: #f4f4f5; /* Zinc-100 */
+  --primary-foreground: #000000;
+
+  /* Secondary - Zinc-800 button style */
+  --secondary: #27272a; /* Zinc-800 */
+  --secondary-hover: #3f3f46; /* Zinc-700 */
+  --secondary-foreground: #ffffff;
+
+  /* Accent - Blue-500 */
+  --accent: #3b82f6; /* Blue-500 */
+  --accent-hover: #2563eb; /* Blue-600 */
+  --accent-foreground: #ffffff;
+
+  /* Border colors - Zinc borders */
+  --border: #27272a; /* Zinc-800 */
+  --border-secondary: #3f3f46; /* Zinc-700 */
+
+  /* Card colors - Zinc-900 cards */
+  --card: #18181b; /* Zinc-900 */
+  --card-hover: #27272a; /* Zinc-800 */
+
+  /* Muted colors */
+  --muted: #27272a; /* Zinc-800 */
+  --muted-foreground: #71717a; /* Zinc-500 */
+
+  /* Success - Blue accent */
+  --success: #3b82f6;
+  --success-foreground: #ffffff;
+
+  /* Error - Red (keeping functional) */
+  --error: #ef4444; /* Red-500 */
+  --error-foreground: #ffffff;
+
+  /* Warning - Amber (keeping functional) */
+  --warning: #f59e0b; /* Amber-500 */
+  --warning-foreground: #000000;
+
+  /* Info - Blue accent */
+  --info: #3b82f6;
+  --info-foreground: #ffffff;
+
+  /* Input colors */
+  --input: #18181b; /* Zinc-900 */
+  --input-border: #27272a; /* Zinc-800 */
+  --input-focus: #3f3f46; /* Zinc-700 */
+
+  /* Shadow */
+  --shadow: rgba(0, 0, 0, 0.5);
+  --shadow-lg: rgba(0, 0, 0, 0.8);
+
+  /* Design System Tokens */
+  --spacing-xs: 0.25rem; /* 4px */
+  --spacing-sm: 0.5rem; /* 8px */
+  --spacing-md: 1rem; /* 16px */
+  --spacing-lg: 1.5rem; /* 24px */
+  --spacing-xl: 2rem; /* 32px */
+  --spacing-2xl: 3rem; /* 48px */
+  --spacing-3xl: 4rem; /* 64px */
+
+  --radius-sm: 0.5rem; /* 8px - rounded-lg */
+  --radius-md: 0.75rem; /* 12px - rounded-xl */
+  --radius-lg: 1rem; /* 16px - rounded-2xl */
+  --radius-full: 9999px; /* rounded-full */
+
+  --transition-fast: 200ms;
+  --transition-normal: 300ms;
 }
 
 @theme inline {
   --color-background: var(--background);
+  --color-background-secondary: var(--background-secondary);
+  --color-background-tertiary: var(--background-tertiary);
   --color-foreground: var(--foreground);
+  --color-foreground-secondary: var(--foreground-secondary);
+  --color-foreground-tertiary: var(--foreground-tertiary);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-hover: var(--secondary-hover);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-border: var(--border);
+  --color-border-secondary: var(--border-secondary);
+  --color-card: var(--card);
+  --color-card-hover: var(--card-hover);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-error: var(--error);
+  --color-error-foreground: var(--error-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --color-input: var(--input);
+  --color-input-border: var(--input-border);
+  --color-input-focus: var(--input-focus);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  /* Design System Spacing */
+  --spacing-xs: var(--spacing-xs);
+  --spacing-sm: var(--spacing-sm);
+  --spacing-md: var(--spacing-md);
+  --spacing-lg: var(--spacing-lg);
+  --spacing-xl: var(--spacing-xl);
+  --spacing-2xl: var(--spacing-2xl);
+  --spacing-3xl: var(--spacing-3xl);
+
+  /* Design System Border Radius */
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-full: var(--radius-full);
+
+  /* Design System Transitions */
+  --transition-fast: var(--transition-fast);
+  --transition-normal: var(--transition-normal);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  transition:
+    background-color 200ms ease,
+    color 200ms ease;
+}
+
+/* Smooth transitions */
+* {
+  transition-property: background-color, border-color, color, fill, stroke;
+  transition-duration: 200ms;
+  transition-timing-function: ease;
+}
+
+/* Range Slider Styling - Dark theme */
+input[type="range"].slider {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+/* Webkit browsers (Chrome, Safari, Edge) */
+input[type="range"].slider::-webkit-slider-track {
+  background: var(--accent);
+  height: 0.5rem;
+  border-radius: 0.5rem;
+}
+
+input[type="range"].slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 50%;
+  background: var(--foreground);
+  border: 2px solid var(--background);
+  box-shadow: 0 2px 4px var(--shadow);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+input[type="range"].slider::-webkit-slider-thumb:hover {
+  background: var(--foreground-secondary);
+  transform: scale(1.1);
+}
+
+/* Firefox */
+input[type="range"].slider::-moz-range-track {
+  background: var(--accent);
+  height: 0.5rem;
+  border-radius: 0.5rem;
+}
+
+input[type="range"].slider::-moz-range-thumb {
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 50%;
+  background: var(--foreground);
+  border: 2px solid var(--background);
+  box-shadow: 0 2px 4px var(--shadow);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+input[type="range"].slider::-moz-range-thumb:hover {
+  background: var(--foreground-secondary);
+  transform: scale(1.1);
+}
+
+/* Focus state */
+input[type="range"].slider:focus {
+  outline: none;
+}
+
+input[type="range"].slider:focus::-webkit-slider-thumb {
+  box-shadow: 0 0 0 3px var(--primary-hover);
+}
+
+input[type="range"].slider:focus::-moz-range-thumb {
+  box-shadow: 0 0 0 3px var(--primary-hover);
+}
+
+/* Scrollbar styling - Dark */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--background-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-secondary);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
+}
+
+/* Remove outline on button click and focus */
+button:focus,
+button:active,
+button:focus-visible,
+a:focus,
+a:active,
+a:focus-visible,
+input:focus,
+input:active,
+textarea:focus,
+textarea:active,
+select:focus,
+select:active {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Remove default focus ring from all interactive elements */
+*:focus,
+*:active,
+*:focus-visible {
+  outline: none !important;
+}
+
+/* Optional: Add custom focus styles for accessibility (subtle) */
+button:focus-visible,
+a:focus-visible {
+  box-shadow:
+    0 0 0 2px var(--background),
+    0 0 0 4px var(--border-secondary);
+}
+
+/* Professional button hover animations */
+button,
+a[role="button"],
+[role="button"] {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Subtle scale and brightness on hover */
+button:hover:not(:disabled),
+a[role="button"]:hover,
+[role="button"]:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.1);
+}
+
+/* Pressed state */
+button:active:not(:disabled),
+a[role="button"]:active,
+[role="button"]:active {
+  transform: translateY(0);
+  filter: brightness(0.95);
+}
+
+/* Disabled state */
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+  filter: none !important;
+}
+
+/* Ripple effect on click */
+@keyframes ripple {
+  0% {
+    transform: scale(0);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+button::after,
+a[role="button"]::after,
+[role="button"]::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 20px;
+  height: 20px;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  pointer-events: none;
+}
+
+button:active:not(:disabled)::after,
+a[role="button"]:active::after,
+[role="button"]:active::after {
+  animation: ripple 0.6s ease-out;
+}
+
+/* Smooth shadow transition on hover */
+button:hover:not(:disabled) {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Remove white borders from all elements */
+input,
+textarea,
+select {
+  border-color: var(--input-border) !important;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: var(--input-focus) !important;
+}
+
+/* Profile image circular enforcement */
+.profile-image {
+  border-radius: 50% !important;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+}
+
+/* Ensure all rounded-full elements maintain circular shape */
+.rounded-full {
+  border-radius: 50% !important;
+}
+
+/* Hide scrollbar utility */
+.scrollbar-hide {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none; /* Chrome, Safari and Opera */
+}
+
+/* Grid background pattern */
+.bg-grid-white\/\[0\.02\] {
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+  background-size: 50px 50px;
+}
+
+/* Pulse animation for badges */
+@keyframes ping {
+  75%,
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+.animate-ping {
+  animation: ping 1s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+/* Gradient text utilities */
+.bg-clip-text {
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+}
+
+.text-transparent {
+  color: transparent !important;
+  -webkit-text-fill-color: transparent !important;
+}
+/* Sonner toast customization */
+[data-sonner-toaster] {
+  --width: 356px;
+  --border-radius: 12px;
+}
+
+/* Light theme - black background */
+[data-sonner-toaster]:not([data-theme='dark']) {
+  --toast-bg: #000000;
+  --toast-border: #333333;
+  --toast-text: #ffffff;
+}
+
+/* Dark theme - white background */
+[data-sonner-toaster][data-theme='dark'] {
+  --toast-bg: #ffffff;
+  --toast-border: #e5e5e5;
+  --toast-text: #000000;
+}
+
+[data-sonner-toast] {
+  background: var(--toast-bg) !important;
+  border: 1px solid var(--toast-border) !important;
+  color: var(--toast-text) !important;
+}
+
+[data-sonner-toast][data-styled='true'] {
+  padding: 16px;
+  gap: 12px;
+  border-radius: var(--border-radius);
+}
+
+[data-sonner-toast] [data-description] {
+  color: var(--toast-text);
+  opacity: 0.8;
+}
+
+[data-sonner-toast] [data-button] {
+  background: var(--toast-text);
+  color: var(--toast-bg);
+  border-radius: calc(var(--border-radius) - 2px);
+}
+
+[data-sonner-toast] [data-cancel] {
+  background: transparent;
+  color: var(--toast-text);
+  border: 1px solid var(--toast-text);
+  border-radius: calc(var(--border-radius) - 2px);
+}
+
+/* Icon colors */
+[data-sonner-toast] [data-icon] {
+  color: var(--toast-text) !important;
+}
+
+/* Close button */
+[data-sonner-toast] [data-close-button] {
+  color: var(--toast-text) !important;
+  opacity: 0.7;
+}
+
+[data-sonner-toast] [data-close-button]:hover {
+  opacity: 1;
 }

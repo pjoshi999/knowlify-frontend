@@ -13,13 +13,23 @@
     "isolatedModules": true,
     "jsx": "react-jsx",
     "incremental": true,
+    "forceConsistentCasingInFileNames": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true,
     "plugins": [
       {
         "name": "next"
       }
     ],
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+      "@/components/*": ["./components/*"],
+      "@/lib/*": ["./app/lib/*"],
+      "@/app/*": ["./app/*"],
+      "@/styles/*": ["./app/styles/*"],
+      "@/types/*": ["./app/types/*"]
     }
   },
   "include": [
@@ -30,5 +40,5 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules", "knowlify-backend"]
 }

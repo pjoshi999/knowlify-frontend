@@ -1,0 +1,126 @@
+# Implementation Plan
+
+- [x] 1. Write bug condition exploration tests
+  - **Property 1: Fault Condition** - Navbar Scroll, Navigation, Searchbar, and Theme Bugs
+  - **CRITICAL**: These tests MUST FAIL on unfixed code - failure confirms the bugs exist
+  - **DO NOT attempt to fix the tests or the code when they fail**
+  - **NOTE**: These tests encode the expected behavior - they will validate the fixes when they pass after implementation
+  - **GOAL**: Surface counterexamples that demonstrate all four bugs exist
+  - Test navbar scroll behavior: scroll to 600px and verify navbar has floating styles (`backdrop-blur-md`, `bg-background/95`, `border-b`, `shadow-sm`)
+  - Test View More navigation: click Featured Courses "View more" button and verify redirects to category page (e.g., `/programming`) not query params
+  - Test searchbar location: verify searchbar is integrated into EnhancedHeader component, not embedded in hero section
+  - Test theme compatibility: switch to light theme and verify page uses CSS variable classes (`bg-background`, `text-foreground`) not hardcoded dark colors (`bg-black`, `text-zinc-400`)
+  - Run tests on UNFIXED code
+  - **EXPECTED OUTCOME**: Tests FAIL (this is correct - it proves the bugs exist)
+  - Document counterexamples found:
+    - Navbar missing floating styles after scroll
+    - View More redirects to `/courses?featured=true` instead of category page
+    - Searchbar found in hero section DOM, not in navbar
+    - Page uses `bg-black` and `bg-zinc-*` classes in light theme
+  - Mark task complete when tests are written, run, and failures are documented
+  - _Requirements: 2.1, 2.2, 2.3, 2.4_
+
+- [x] 2. Write preservation property tests (BEFORE implementing fixes)
+  - **Property 2: Preservation** - Filter, Search, Scroll, and Responsive Behavior
+  - **IMPORTANT**: Follow observation-first methodology
+  - Observe behavior on UNFIXED code for non-buggy interactions
+  - Write property-based tests capturing observed behavior patterns:
+    - Filter functionality: apply price/rating/category filters and verify URL params and results
+    - Search functionality: type queries and verify debouncing, suggestions, Enter key submission
+    - Infinite scroll: scroll to bottom and verify pagination loads additional courses
+    - Responsive design: test mobile/tablet/desktop viewports and verify layouts
+    - Course card clicks: verify navigation to course detail pages
+    - Navbar transitions: verify smooth resize animations (h-20 to h-14)
+  - Property-based testing generates many test cases for stronger guarantees
+  - Run tests on UNFIXED code
+  - **EXPECTED OUTCOME**: Tests PASS (this confirms baseline behavior to preserve)
+  - Mark task complete when tests are written, run, and passing on unfixed code
+  - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6_
+
+- [x] 3. Fix navbar scroll, navigation, searchbar, and theme bugs
+  - [x] 3.1 Integrate EnhancedHeader component
+    - Import EnhancedHeader from `@/app/components/layouts/EnhancedHeader`
+    - Replace custom hero section structure with EnhancedHeader at top of page
+    - Move hero content (heading, subtitle, category pills) to separate section below navbar
+    - Remove `-mt-20` negative margin that pulls content under navbar
+    - Keep `pt-20` padding for fixed navbar clearance
+    - Remove searchbar from hero section (lines 248-268) - EnhancedHeader includes it
+    - Ensure search state management connects to EnhancedHeader's search functionality
+    - _Bug_Condition: isBugCondition(input) where input.scrollY > 500 OR searchbarInHeroSection()_
+    - _Expected_Behavior: Navbar becomes floating with backdrop blur, searchbar in navbar_
+    - _Preservation: Navbar resize transitions, search functionality_
+    - _Requirements: 2.1, 2.3, 3.1, 3.3_
+
+  - [x] 3.2 Fix View More button navigation
+    - Update CategorySection component to accept `category` prop
+    - Map section titles to category routes:
+      - "Featured Courses" → `/programming`
+      - "Most Popular" → `/design`
+      - "New Releases" → `/business`
+    - Update onViewMore handlers (lines 397, 405, 413):
+      - Change from `router.push("/courses?featured=true")` to `router.push("/programming")`
+      - Change from `router.push("/courses?sort=popular")` to `router.push("/design")`
+      - Change from `router.push("/courses?sort=date")` to `router.push("/business")`
+    - _Bug_Condition: isBugCondition(input) where input.buttonClick IN ['Featured', 'Most Popular', 'New Releases']_
+    - _Expected_Behavior: View More buttons navigate to category-specific pages_
+    - _Preservation: Category pill clicks, filter functionality_
+    - _Requirements: 2.2, 3.2_
+
+  - [x] 3.3 Replace hardcoded colors with CSS variables
+    - Replace all hardcoded color classes with theme-aware CSS variables:
+      - `bg-black` → `bg-background`
+      - `bg-zinc-900/50` → `bg-card/50`
+      - `bg-zinc-900/30` → `bg-card/30`
+      - `text-zinc-400` → `text-muted-foreground`
+      - `text-zinc-500` → `text-muted-foreground`
+      - `text-zinc-300` → `text-foreground-secondary`
+      - `text-white` → `text-foreground`
+      - `border-zinc-900` → `border-border`
+      - `border-zinc-800/50` → `border-border/50`
+      - `border-zinc-800` → `border-border`
+      - `border-zinc-700` → `border-border`
+      - `bg-zinc-800` → `bg-muted`
+      - `bg-zinc-700` → `bg-muted-foreground/20`
+    - Update gradient classes: `from-zinc-200 via-zinc-400 to-zinc-600` → `from-foreground via-foreground-secondary to-muted-foreground`
+    - Update hero section background from `bg-black` to `bg-background`
+    - Update grid background colors to use theme variables
+    - _Bug_Condition: isBugCondition(input) where input.theme === 'light' AND hardcodedDarkColors()_
+    - _Expected_Behavior: Page uses CSS variable-based theme colors in both light and dark modes_
+    - _Preservation: Dark theme appearance, visual design_
+    - _Requirements: 2.4, 3.4_
+
+  - [x] 3.4 Verify bug condition exploration tests now pass
+    - **Property 1: Expected Behavior** - All Four Bugs Fixed
+    - **IMPORTANT**: Re-run the SAME tests from task 1 - do NOT write new tests
+    - The tests from task 1 encode the expected behavior
+    - When these tests pass, it confirms the expected behavior is satisfied
+    - Run bug condition exploration tests from step 1
+    - **EXPECTED OUTCOME**: Tests PASS (confirms all bugs are fixed)
+    - Verify navbar becomes floating on scroll with correct styles
+    - Verify View More buttons navigate to category pages
+    - Verify searchbar is in EnhancedHeader component
+    - Verify theme colors use CSS variables
+    - _Requirements: 2.1, 2.2, 2.3, 2.4_
+
+  - [x] 3.5 Verify preservation tests still pass
+    - **Property 2: Preservation** - No Regressions in Existing Functionality
+    - **IMPORTANT**: Re-run the SAME tests from task 2 - do NOT write new tests
+    - Run preservation property tests from step 2
+    - **EXPECTED OUTCOME**: Tests PASS (confirms no regressions)
+    - Confirm filter functionality still works correctly
+    - Confirm search functionality still works correctly
+    - Confirm infinite scroll pagination still works
+    - Confirm responsive design still works on all viewports
+    - Confirm navbar transitions remain smooth
+    - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6_
+
+- [x] 4. Checkpoint - Ensure all tests pass
+  - Run all exploration tests and verify they pass (bugs are fixed)
+  - Run all preservation tests and verify they pass (no regressions)
+  - Manually test the courses page in browser:
+    - Scroll down and verify navbar becomes floating
+    - Click View More buttons and verify navigation to category pages
+    - Verify searchbar is properly aligned in navbar
+    - Switch to light theme and verify proper colors and readability
+    - Test filters, search, infinite scroll, and responsive design
+  - Ask user if any questions or issues arise

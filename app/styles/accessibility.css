@@ -1,0 +1,65 @@
+/* Accessibility - Visible Focus Indicators */
+
+/* Global focus styles for keyboard navigation */
+*:focus-visible {
+  outline: 2px solid var(--primary, #3b82f6);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Button focus styles */
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--primary, #3b82f6);
+  outline-offset: 2px;
+}
+
+/* Input focus styles */
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--primary, #3b82f6);
+  outline-offset: 0;
+  border-color: var(--primary, #3b82f6);
+}
+
+/* Video control button focus styles */
+.video-control-button:focus-visible {
+  outline: 2px solid white;
+  outline-offset: 2px;
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Skip link styles */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: var(--surface, #ffffff);
+  color: var(--foreground, #000000);
+  padding: 8px 16px;
+  text-decoration: none;
+  border-radius: 4px;
+  border: 2px solid var(--primary, #3b82f6);
+  z-index: 100;
+  font-weight: 600;
+  transition: top 0.3s;
+}
+
+.skip-link:focus {
+  top: 8px;
+  outline: 2px solid var(--primary, #3b82f6);
+  outline-offset: 2px;
+}
+
+/* Ensure all interactive elements are keyboard accessible */
+[role="button"]:not([tabindex="-1"]),
+[role="link"]:not([tabindex="-1"]),
+[role="menuitem"]:not([tabindex="-1"]) {
+  cursor: pointer;
+}
+
+/* Remove focus outline for mouse users (but keep for keyboard) */
+*:focus:not(:focus-visible) {
+  outline: none;
+}
